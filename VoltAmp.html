@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>VoltAmp Toolkit — Electrical Formula Solver</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box}
+    :root{
+      --bg:#0b1220; --card:#0d1622; --muted:#98a6b3; --accent1:#6d28d9; --accent2:#db2777; --glass: rgba(255,255,255,0.03);
+      --success:#10b981; --danger:#ef4444; --surface:#07101a; --glass-2: rgba(255,255,255,0.02);
+      --text:#e8f1f8; --soft:#0f1724; --radius:12px;
+    }
+    /* Professional light theme (soft, clean) */
+    body.light{
+  --bg: #0b1220 !important;
+  --card:#ffffff;
+  --muted:#475569;
+  --accent1:#6d28d9;
+  --accent2:#db2777;
+  --glass: rgba(2,6,23,0.03);
+  --text:#061427;
+  --surface:#ffffff;
+}
+
+
+    /* text boxes: always use accent2 border (#db2777) in both modes */
+input[type=number], input[type=text], select, textarea{
+  width:100%;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #db2777 !important;
+  background:transparent;
+  color:inherit;
+  outline:none;
+}
+input[type=number]:focus,
+input[type=text]:focus,
+select:focus,
+textarea:focus {
+  box-shadow: 0 0 0 4px rgba(219, 39, 119, 0.1);
+  border-color: #db2777;
+}
+
+/* Output / result box border in accent1 (#6d28d9) */
+.result {
+  border: 1px solid #6d28d9 !important;      /* purple border */
+  border-radius: 10px;
+  padding: 12px;
+  background-image: none !important;         /* remove any gradient */
+  background-color: rgba(50, 49, 49, 0.049) !important; /* soft grey tint */
+}
+
+/* Slightly different tint in light mode if you want it less bright */
+body.light .result {
+  background-image: none !important;
+  background-color: rgba(2,6,23,0.04) !important;
+}
+.result:hover {
+  box-shadow: 0 0 0 4px rgba(109, 40, 217, 0.12);
+}  
+
+
+    html,body{height:100%;margin:0;background-color:var(--bg) !important;background-image:none !important;color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Arial;min-height:100vh;overscroll-behavior-y:contain}
+
+    .app{max-width:1180px;margin:18px auto;padding:12px;display:grid;grid-template-columns:300px 1fr;gap:14px}
+    .sidebar{background:var(--card);border-radius:14px;padding:16px;box-shadow:0 6px 18px rgba(6,10,14,0.25);border:1px solid rgba(255,255,255,0.03)}
+    body.light .sidebar{box-shadow:0 2px 6px rgba(2,6,23,0.06);border:1px solid rgba(2,6,23,0.04)}
+    .logo{font-weight:800;color:var(--accent1);font-size:20px;letter-spacing:0.6px;margin-bottom:6px}
+    .subtitle{color:var(--muted);font-size:13px;margin-bottom:12px}
+    .menu{display:flex;flex-direction:column;gap:8px}
+    .menu button{background:transparent;border:1px solid transparent;padding:10px;border-radius:10px;color:var(--muted);text-align:left;cursor:pointer;transition:all .12s}
+    .menu button:hover{transform:translateX(6px)}
+    .menu button.active{background:linear-gradient(90deg, rgba(107,40,217,0.06), rgba(192,38,211,0.03));border:1px solid rgba(107,40,217,0.06);color:var(--text)}
+    .content{background:var(--card);border-radius:14px;padding:16px;min-height:520px;box-shadow:0 12px 40px rgba(6,10,14,0.25);border:1px solid rgba(255,255,255,0.02)}
+    body.light .content{background:var(--card);box-shadow:0 2px 6px rgba(2,6,23,0.06);border:1px solid rgba(2,6,23,0.04)}
+    h1{font-size:20px;margin:0 0 8px 0;color:var(--accent2)}
+    .section{margin-top:12px}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input[type=number], input[type=text], select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--glass-2);background:transparent;color:inherit;outline:none}
+    input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{opacity:0}
+    input:disabled{opacity:0.6}
+    .row{display:flex;gap:12px}
+    .row > *{flex:1;min-width:0}
+    .btn{display:inline-block;padding:10px 14px;border-radius:10px;border:none;background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#fff;cursor:pointer;font-weight:700}
+    .muted{color:var(--muted);font-size:13px}
+    .result{background:linear-gradient(180deg, rgba(255,255,255,0.012), rgba(255,255,255,0.00));padding:12px;border-radius:10px;margin-top:12px;border:1px solid rgba(255,255,255,0.02)}
+    pre{white-space:pre-wrap;font-size:13px;color:var(--text)}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+    .small{font-size:12px;color:var(--muted)}
+    .circuit-card{background:linear-gradient(180deg, rgba(139,92,246,0.02), rgba(219,39,119,0.02));border-radius:12px;padding:12px;border:1px solid rgba(139,92,246,0.04)}
+    .note{font-size:13px;color:var(--muted)}
+    .theme-row{display:flex;align-items:center;gap:10px}
+    .switch {position:relative;display:inline-block;width:46px;height:26px}
+    .switch input{opacity:0;width:0;height:0}
+    .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.06);transition:.2s;border-radius:999px}
+    .slider:before{position:absolute;content:"";height:20px;width:20px;left:3px;top:3px;background:white;border-radius:50%;transition:.2s}
+    .switch input:checked + .slider{background:linear-gradient(90deg,var(--accent1),var(--accent2))}
+    .switch input:checked + .slider:before{transform:translateX(20px)}
+
+    /* Mobile: collapsible menu + top selector */
+    .mobile-top{display:none;margin-bottom:12px}
+    .hamburger{display:none;border-radius:8px;padding:8px;background:transparent;border:1px solid transparent}
+
+    @media (max-width:980px){
+      .app{grid-template-columns:1fr;padding:10px}
+      .grid{grid-template-columns:1fr}
+      .sidebar{position:sticky;top:10px;z-index:10}
+      .mobile-top{display:flex;gap:8px;align-items:center}
+      .hamburger{display:inline-flex}
+      .menu{display:none}
+      .menu.open{display:flex}
+    }
+
+    /* Avoid black flash on overscroll in some mobile browsers */
+    html,body{background-repeat:no-repeat; background-size:cover; -webkit-overflow-scrolling:touch}
+    body{min-height:100vh}
+
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <button class="hamburger" id="hamburger" aria-label="Toggle menu"></button>
+        <div class="logo">VoltAmp Toolkit</div>
+      </div>
+      <div class="subtitle">Interactive solver:(Choose topic)</div>
+
+      <!-- Mobile top: calculator selector -->
+      <div class="mobile-top">
+        <select id="calcSelector" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--glass-2);background:transparent;color:inherit">
+          <option value="dc">DC Circuits — Ohm / Power</option>
+          <option value="ac">AC Fundamentals</option>
+          <option value="imp">Impedance & RLC</option>
+          <option value="three">Three-phase</option>
+          <option value="dcmachine">DC Machines</option>
+          <option value="about">About</option>
+        </select>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;margin:10px 0">
+        <div class="theme-row">
+          <label class="small">Dark</label>
+          <label class="switch"><input type="checkbox" id="themeSwitch"><span class="slider"></span></label>
+          <label class="small">Light</label>
+        </div>
+        <div class="small" style="margin-left:auto;color:var(--muted)">Mode saved in browser</div>
+      </div>
+
+      <div class="menu" id="menu">
+        <button data-section="dc" class="active">DC Circuits</button>
+        <button data-section="ac">AC Fundamentals</button>
+        <button data-section="imp">Impedance & RLC</button>
+        <button data-section="three">Three-phase</button>
+        <button data-section="dcmachine">DC Machines</button>
+        <button data-section="about">About</button>
+      </div>
+
+      <div style="height:14px"></div>
+      
+    </aside>
+
+    <main class="content">
+      <!-- DC Circuits -->
+      <section id="dc" class="section">
+        <h1>DC Circuits</h1>
+        <div class="grid">
+          <div class="circuit-card">
+            <h3 style="margin:0 0 8px 0">Ohm's Law</h3>
+            <div>
+                <label>Voltage (V)</label>
+                <input id="v_ohm" type="number" placeholder="Voltage V (V)" step="any">
+                <label style="margin-top:8px">Current (I)</label>
+                <input id="i_ohm" type="number" placeholder="Current I (A)" step="any">
+                <label style="margin-top:8px">Resistance (R)</label>
+                <input id="r_ohm" type="number" placeholder="Resistance R (Ω)" step="any">
+                <div style="display:flex;gap:8px;margin-top:10px"><button class="btn" onclick="solveOhm()">Calculate</button><button class="btn" onclick="resetDCInputs()" style="background:transparent;color:var(--accent1);border:1px solid rgba(255,255,255,0.03)">Reset</button></div>
+                <div id="ohm_result" class="result"></div>
+              </div>
+            <div class="small" style="margin-top:8px">Inputs auto-disable when two values are present. Calculation fills the missing value.</div>
+          </div>
+
+          <div class="circuit-card">
+            <h3 style="margin:0 0 8px 0">Series / Parallel Resistances</h3>
+            <label>Enter resistor values (comma separated)</label>
+            <input id="res_list" type="text" placeholder="e.g. 10, 22, 47, 100">
+            <div style="display:flex;gap:8px;margin-top:8px">
+  <button class="btn" onclick="seriesEq()">Series</button>
+  <button class="btn" onclick="parallelEq()">Parallel</button>
+  <button class="btn" style="background:transparent;color:var(--accent1);border:1px solid rgba(255,255,255,0.03)" onclick="resetResistors()">Reset</button>
+            </div>
+
+            <div id="res_result" class="result"></div>
+          </div>
+
+          <div class="circuit-card">
+            <h3 style="margin:0 0 8px 0">Power (DC)</h3>
+            <label>Enter any two — third will be calculated. Inputs auto-disable to prevent mistakes.</label>
+            <div class="row">
+              <input id="p_v" type="number" placeholder="Voltage (V)" step="any">
+              <input id="p_i" type="number" placeholder="Current (A)" step="any">
+              <input id="p_r" type="number" placeholder="Resistance (Ω)" step="any">
+            </div>
+            <div style="margin-top:8px;display:flex;gap:8px">
+  <button class="btn" id="p_calc" onclick="powerDC()">Calculate Power</button>
+  <button class="btn" style="background:transparent;color:var(--accent1);border:1px solid rgba(255,255,255,0.03)" onclick="resetPowerDC()">Reset</button>
+</div>
+            <div id="p_result" class="result"></div>
+            <div class="small" style="margin-top:6px">Behavior: when V & I entered → R disabled. I & R entered → V disabled. V & R entered → I disabled. Clearing one re-enables others.</div>
+          </div>
+
+          <div class="circuit-card">
+            <h3 style="margin:0 0 8px 0">KCL / KVL Notes</h3>
+            <div class="muted">KCL: Sum of currents at node = 0. KVL: Algebraic sum of voltages around loop = 0.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AC Fundamentals -->
+      <section id="ac" class="section" style="display:none">
+        <h1>AC Fundamentals</h1>
+        <div class="grid">
+          <div>
+            <h3>Waveform Parameters</h3>
+            <label>Peak Amplitude Vm</label>
+            <input id="vm" type="number" placeholder="Vm (V)" step="any">
+            <label>Frequency f (Hz)</label>
+            <input id="f" type="number" placeholder="f (Hz)" step="any">
+            <div style="margin-top:8px;display:flex;gap:8px">
+  <button class="btn" onclick="acParams()">Compute RMS, Avg, ω, T, form/peak factors</button>
+  <button class="btn" style="background:transparent;color:var(--accent1);border:1px solid rgba(255,255,255,0.03)" onclick="resetACParams()">Reset</button>
+</div>
+<div id="ac_result" class="result"></div>
+          </div>
+
+          <div>
+            <h3>Series Power (AC)</h3>
+            <label>Enter Vrms and Irms</label>
+            <div class="row">
+              <input id="ac_vr" type="number" placeholder="Vrms (V)" step="any">
+              <input id="ac_ir" type="number" placeholder="Irms (A)" step="any">
+            </div>
+            <label style="margin-top:8px">Power factor (cos φ)</label>
+            <input id="ac_pf" type="number" placeholder="cos φ (−1..1)" step="any">
+            <label style="margin-top:8px">sin φ</label>
+            <input id="ac_sf" type="number" placeholder="sin φ (−1..1)" step="any">
+           <div style="margin-top:8px;display:flex;gap:8px">
+  <button class="btn" onclick="acPower()">Calculate S, P, Q</button>
+  <button class="btn" style="background:transparent;color:var(--accent1);border:1px solid rgba(255,255,255,0.03)" onclick="resetACPower()">Reset</button>
+</div>
+
+            <div id="acpower_result" class="result"></div>
+            <div class="small" style="margin-top:6px">Behavior: enter either <strong>cos φ</strong> or <strong>sin φ</strong>. The other will be disabled and auto-filled using the identity sin²φ + cos²φ = 1. If you need sign (leading/lagging), enter a negative value appropriately.</div>
+          </div>
+
+          <div>
+            <h3>Phasor Behavior (R, L, C)</h3>
+            <label>Enter R, L (H), C (F) and frequency</label>
+            <input id="phasor_r" type="number" placeholder="R (Ω)" step="any">
+            <div class="row">
+              <input id="phasor_l" type="number" placeholder="L (H)" step="any">
+              <input id="phasor_c" type="number" placeholder="C (F)" step="any">
+            </div>
+            <input id="phasor_f" type="number" placeholder="f (Hz)" step="any">
+            <div style="margin-top:8px;display:flex;gap:8px">
+  <button class="btn" onclick="phasorRel()">Compute Reactances & Phase</button>
+  <button class="btn" style="background:transparent;color:var(--accent1);border:1px solid rgba(255,255,255,0.03)" onclick="resetPhasor()">Reset</button>
+</div>
+
+            <div id="phasor_result" class="result"></div>
+          </div>
+
+          <div>
+            <h3>Phasor Diagram (visual)</h3>
+            <div class="phaser" id="phasor_canvas"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Impedance & RLC -->
+      <section id="imp" class="section" style="display:none">
+        <h1>Impedance & R-L-C Series</h1>
+        <div class="grid">
+          <div>
+            <h3>R-L Series</h3>
+            <div class="row"><input id="rl_r" type="number" placeholder="R (Ω)" step="any"><input id="rl_l" type="number" placeholder="L (H)" step="any"></div>
+            <input id="rl_f" type="number" placeholder="frequency f (Hz)" step="any">
+           <div style="margin-top:8px;display:flex;gap:8px">
+  <button class="btn" onclick="calcRL()">Calculate Z & φ</button>
+  <button class="btn" style="background:transparent;color:var(--accent1);border:1px solid rgba(255,255,255,0.03)" onclick="resetRL()">Reset</button>
+</div>
+
+            <div id="rl_res" class="result"></div>
+          </div>
+
+          <div>
+            <h3>R-C Series</h3>
+            <div class="row"><input id="rc_r" type="number" placeholder="R (Ω)" step="any"><input id="rc_c" type="number" placeholder="C (F)" step="any"></div>
+            <input id="rc_f" type="number" placeholder="frequency f (Hz)" step="any">
+            <div style="margin-top:8px;display:flex;gap:8px">
+  <button class="btn" onclick="calcRC()">Calculate Z & φ</button>
+  <button class="btn" style="background:transparent;color:var(--accent1);border:1px solid rgba(255,255,255,0.03)" onclick="resetRC()">Reset</button>
+</div>
+
+            <div id="rc_res" class="result"></div>
+          </div>
+
+          <div>
+            <h3>R-L-C Series</h3>
+            <div class="row"><input id="rlc_r" type="number" placeholder="R (Ω)" step="any"><input id="rlc_l" type="number" placeholder="L (H)" step="any"></div>
+            <div class="row" style="margin-top:8px"><input id="rlc_c" type="number" placeholder="C (F)" step="any"><input id="rlc_f" type="number" placeholder="f (Hz)" step="any"></div>
+            <div style="margin-top:8px;display:flex;gap:8px">
+  <button class="btn" onclick="calcRLC()">Calculate Z, φ & Resonance</button>
+  <button class="btn" style="background:transparent;color:var(--accent1);border:1px solid rgba(255,255,255,0.03)" onclick="resetRLC()">Reset</button>
+</div>
+
+            <div id="rlc_res" class="result"></div>
+          </div>
+
+          <div>
+            <h3>Quick Notes</h3>
+            <div class="muted">X_L = 2πfL, X_C = 1/(2πfC), Z = √(R²+(X_L-X_C)²), φ = atan((X_L-X_C)/R)</div>
+          </div>
+        </div>
+      </section>
+
+     <!-- Three-phase -->
+<section id="three" class="section" style="display:none">
+  <h1>Three-phase Circuits</h1>
+
+  <div class="rows" style="display:flex; flex-direction:column; gap:18px; align-items:stretch">
+
+    <!-- ROW 1: LINE quantities -->
+    <div style="padding:12px;border-radius:12px;background:var(--card);">
+      <h3 style="margin-top:0">Line Quantities</h3>
+
+      <label>Connection (affects conversions)</label>
+      <select id="three_conn_col" style="margin-bottom:8px">
+        <option value="star">Star (Y)</option>
+        <option value="delta">Delta (Δ)</option>
+      </select>
+
+      <label>Line Voltage V<sub>L</sub> (V)</label>
+      <input id="col_vl" type="number" placeholder="V_L" step="any">
+
+      <label style="margin-top:8px">Line Current I<sub>L</sub> (A)</label>
+      <input id="col_il" type="number" placeholder="I_L" step="any">
+
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn" onclick="computePhaseFromLine()">Compute Phase (from Line)</button>
+        <button class="btn" onclick="clearLineCol()" style="background:transparent;color:var(--accent1);border:1px solid rgba(255,255,255,0.03)">Reset</button>
+      </div>
+
+      <!-- RESULT UNDER BUTTON -->
+      <div id="line_result" class="result" style="margin-top:10px">—</div>
+
+      <div class="small" style="margin-top:10px;">Formula reference:</div>
+      <div class="muted small" style="margin-top:6px">Star: V_ph = V_L / √3, I_ph = I_L<br>Delta: V_ph = V_L, I_ph = I_L / √3</div>
+    </div>
+
+    <!-- ROW 2: PHASE quantities -->
+    <div style="padding:12px;border-radius:12px;background:var(--card);">
+      <h3 style="margin-top:0">Phase Quantities</h3>
+
+      <label>Connection (affects conversions)</label>
+      <select id="three_conn_col2" style="margin-bottom:8px">
+        <option value="star">Star (Y)</option>
+        <option value="delta">Delta (Δ)</option>
+      </select>
+
+      <label>Phase Voltage V<sub>ph</sub> (V)</label>
+      <input id="col_vph" type="number" placeholder="V_ph" step="any">
+
+      <label style="margin-top:8px">Phase Current I<sub>ph</sub> (A)</label>
+      <input id="col_iph" type="number" placeholder="I_ph" step="any">
+
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn" onclick="computeLineFromPhase()">Compute Line (from Phase)</button>
+        <button class="btn" onclick="clearPhaseCol()" style="background:transparent;color:var(--accent1);border:1px solid rgba(255,255,255,0.03)">Reset</button>
+      </div>
+
+      <!-- RESULT UNDER BUTTON -->
+      <div id="phase_result" class="result" style="margin-top:10px">—</div>
+
+      <div class="small" style="margin-top:10px;">Formula reference:</div>
+      <div class="muted small" style="margin-top:6px">Star: V_L = V_ph × √3, I_L = I_ph<br>Delta: V_L = V_ph, I_L = I_ph × √3</div>
+    </div>
+
+    <!-- ROW 3: POWER calculations -->
+    <div style="padding:12px;border-radius:12px;background:var(--card);">
+      <h3 style="margin-top:0">Power Calculator</h3>
+
+      <div class="small muted">You can compute total three-phase power using line or phase values:</div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+  <button class="btn" onclick="computePowerFromLine()">Use Line values</button>
+  <button class="btn" onclick="computePowerFromPhase()">Use Phase values</button>
+  <button class="btn" style="background:transparent;color:var(--accent1);border:1px solid rgba(255,255,255,0.03)" onclick="resetThreePower()">Reset</button>
+</div>
+
+
+      <div style="margin-top:12px">
+        <label>Power factor (cos φ)</label>
+        <input id="three_pf" type="number" placeholder="0..1" step="any">
+      </div>
+
+      <!-- RESULT UNDER BUTTON -->
+      <div id="three_power_res" class="result" style="margin-top:12px">Total power: —</div>
+
+      <div class="small muted" style="margin-top:12px">Formulas (for reference):</div>
+      <div class="muted small" style="margin-top:6px">P = √3 × V_L × I_L × cosφ<br>P_ph = V_ph × I_ph × cosφ</div>
+    </div>
+
+  </div>
+</section>
+
+
+      <!-- DC Machines -->
+      <section id="dcmachine" class="section" style="display:none">
+        <h1>DC Machines</h1>
+        <div class="grid">
+          <div>
+            <h3>Induced EMF (Generator / Motor back emf)</h3>
+            <label>Enter P, Φ (Wb), Z, N (rpm), A (parallel paths)</label>
+            <div class="row"><input id="gm_p" type="number" placeholder="P (poles)" step="any"><input id="gm_phi" type="number" placeholder="Φ (Wb)" step="any"></div>
+            <div class="row" style="margin-top:8px"><input id="gm_z" type="number" placeholder="Z (conductors)" step="any"><input id="gm_n" type="number" placeholder="N (rpm)" step="any"></div>
+            <input id="gm_a" type="number" placeholder="A (parallel paths)" step="any">
+            <div style="margin-top:8px"><button class="btn" onclick="inducedEMF()">Calculate E / Eb</button>
+<button class="btn" style="background:transparent;color:var(--accent1);border:1px solid rgba(255,255,255,0.03)" onclick="resetGM()">Reset</button></div>
+
+            <div id="gm_res" class="result"></div>
+          </div>
+
+          <div>
+            <h3>Motor Torque & Speed</h3>
+            <label>Torque: T = k Φ I_a. Enter kΦ (or Φ and k), Ia</label>
+            <div class="row"><input id="mt_kphi" type="number" placeholder="kΦ (N·m/A)" step="any"><input id="mt_ia" type="number" placeholder="I_a (A)" step="any"></div>
+            <label>Speed approx: N ∝ (V - I_a R_a)/Φ</label>
+            <div class="row" style="margin-top:8px"><input id="mt_v" type="number" placeholder="V (V)" step="any"><input id="mt_ra" type="number" placeholder="R_a (Ω)" step="any"></div>
+            <input id="mt_phi" type="number" placeholder="Φ (Wb)" step="any">
+            <div style="margin-top:8px"><button class="btn" onclick="motorCalc()">Calculate Torque & Speed (approx)</button>
+<button class="btn" style="background:transparent;color:var(--accent1);border:1px solid rgba(255,255,255,0.03)" onclick="resetMotor()">Reset</button></div>
+
+            <div id="mt_res" class="result"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" class="section" style="display:none">
+        <h1>About</h1>
+        <div class="result">
+          <p class="muted">VoltAmp Toolkit is an educational web app built to help students quickly compute and understand common electrical formulas and circuit relationships for DC circuits, AC fundamentals, impedance/RLC, three-phase systems, and DC machines. The interface focuses on clarity: inputs are validated and inputs that determine the same quantity are auto-disabled to avoid conflicting entries. Calculations cover Ohm's law, series/parallel resistance, RMS and waveform parameters, phasor relationships, impedance and phase angle, three-phase line/phase conversions, power (total and per-phase), and basic DC machine equations.</p>
+          <p class="muted">Technical notes: the app is a single-file HTML/CSS/JavaScript page that runs entirely in the browser—no server required. It uses lightweight, dependency-free JavaScript, modern CSS variables for theming (light/dark), and careful UI debouncing to keep the experience smooth on scrolling devices.</p>
+          <p class="muted">Contributors: This project was developed with contributions and guidance; special credit to <strong>Vikas S Ritti</strong> for requirements, testing, and iterative design input.</p>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+<script>
+// Helpers
+function format(num, p=6){ if(num===undefined || num===null || isNaN(num)) return '—'; return Number(num.toPrecision(p)).toString(); }
+function parseList(str){ return (str||'').split(',').map(s=>parseFloat(s.trim())).filter(x=>!isNaN(x)); }
+
+ // Menu navigation + mobile selector
+const buttons = document.querySelectorAll('#menu button');
+function showSection(id){ document.querySelectorAll('main .section').forEach(s=>s.style.display='none'); document.getElementById(id).style.display='block'; buttons.forEach(x=>x.classList.remove('active')); const btn = document.querySelector('#menu button[data-section="'+id+'"]'); if(btn) btn.classList.add('active'); }
+buttons.forEach(b=>b.addEventListener('click', ()=>{ showSection(b.dataset.section); }));
+
+const calcSelector = document.getElementById('calcSelector'); calcSelector.addEventListener('change', ()=>{ const val = calcSelector.value; showSection(val); // close menu on mobile
+  document.getElementById('menu').classList.remove('open'); });
+
+// Hamburger mobile toggle
+const hamburger = document.getElementById('hamburger'); const menuEl = document.getElementById('menu'); hamburger && hamburger.addEventListener('click', ()=>{ menuEl.classList.toggle('open'); });
+
+// Theme switch
+const themeSwitch = document.getElementById('themeSwitch'); const body = document.body; const saved = localStorage.getItem('vat-theme'); if(saved==='light'){ body.classList.add('light'); themeSwitch.checked = true; }
+themeSwitch.addEventListener('change', ()=>{ if(themeSwitch.checked){ body.classList.add('light'); localStorage.setItem('vat-theme','light'); } else { body.classList.remove('light'); localStorage.setItem('vat-theme','dark'); } });
+
+// --- DC inputs ---
+const vOhm = document.getElementById('v_ohm');
+const iOhm = document.getElementById('i_ohm');
+const rOhm = document.getElementById('r_ohm');
+[vOhm,iOhm,rOhm].forEach(inp=>inp.addEventListener('input', ()=>{ debounce(handleOhmInputs,80)(); document.getElementById('ohm_result').innerHTML = '<div class="small">Enter two values and press Calculate — the missing value will be filled.</div>'; }));
+
+function resetDCInputs(){ vOhm.value=''; iOhm.value=''; rOhm.value=''; document.getElementById('ohm_result').innerHTML=''; handleOhmInputs(); }
+
+function handleOhmInputs(){ const v = parseFloat(vOhm.value); const i = parseFloat(iOhm.value); const r = parseFloat(rOhm.value);
+  if(!isNaN(v) && !isNaN(i)) { rOhm.disabled = true; } else rOhm.disabled = false;
+  if(!isNaN(v) && !isNaN(r)) { iOhm.disabled = true; } else iOhm.disabled = false;
+  if(!isNaN(i) && !isNaN(r)) { vOhm.disabled = true; } else vOhm.disabled = false; }
+
+function solveOhm(){
+  const V = parseFloat(vOhm.value);
+  const I = parseFloat(iOhm.value);
+  const R = parseFloat(rOhm.value);
+  let out='';
+  try{
+    const known = [!isNaN(V), !isNaN(I), !isNaN(R)].filter(x=>x).length;
+    if(known<2) { out = '<div class="small" style="color:var(--danger)">Please enter at least two values.</div>'; document.getElementById('ohm_result').innerHTML = out; return; }
+    if(isNaN(V)){
+      const Vc = I*R; out += `<div>V = I × R = ${format(I)} × ${format(R)} = ${format(Vc)} V</div>`; vOhm.value = Vc;
+    } else if(isNaN(I)){
+      const Ic = V/R; out += `<div>I = V / R = ${format(V)} / ${format(R)} = ${format(Ic)} A</div>`; iOhm.value = Ic;
+    } else if(isNaN(R)){
+      const Rc = V/I; out += `<div>R = V / I = ${format(V)} / ${format(I)} = ${format(Rc)} Ω</div>`; rOhm.value = Rc;
+    } else {
+      out = `<div class="small">All provided — consistency check:</div><div>V = ${format(V)} V, I = ${format(I)} A, R = ${format(R)} Ω</div><div>Check V ?= I×R → ${format(I*R)}</div>`;
+    }
+    document.getElementById('ohm_result').innerHTML = out; handleOhmInputs();
+  }catch(e){document.getElementById('ohm_result').innerHTML = '<div style="color:var(--danger)">Error</div>'}
+}
+
+// Debounce helper
+function debounce(fn, wait=100){ let t; return function(...args){ clearTimeout(t); t = setTimeout(()=>fn.apply(this,args), wait); }}
+
+// Series / Parallel
+function seriesEq(){ const arr = parseList(document.getElementById('res_list').value); if(arr.length==0){document.getElementById('res_result').innerHTML='<div style="color:var(--danger)">Enter resistors</div>';return} const sum = arr.reduce((a,b)=>a+b,0); document.getElementById('res_result').innerHTML = `<div>Series equivalent R = ${format(sum)} Ω</div><div class="small">Formula: R_eq = ΣR_i</div>`; }
+function parallelEq(){ const arr = parseList(document.getElementById('res_list').value); if(arr.length==0){document.getElementById('res_result').innerHTML='<div style="color:var(--danger)">Enter resistors</div>';return} const inv = arr.reduce((a,b)=>a + (1/b),0); const req = 1/inv; document.getElementById('res_result').innerHTML = `<div>Parallel equivalent R = ${format(req)} Ω</div><div class="small">Formula: 1/R_eq = Σ(1/R_i)</div>`; }
+
+// Power DC auto-disable
+const pV = document.getElementById('p_v'); const pI = document.getElementById('p_i'); const pR = document.getElementById('p_r');
+[pV,pI,pR].forEach(i=>i.addEventListener('input', handlePowerInputs));
+function handlePowerInputs(){ const v = parseFloat(pV.value); const i = parseFloat(pI.value); const r = parseFloat(pR.value);
+  if(!isNaN(v) && !isNaN(i)) { pR.disabled = true; } else pR.disabled = false;
+  if(!isNaN(i) && !isNaN(r)) { pV.disabled = true; } else pV.disabled = false;
+  if(!isNaN(v) && !isNaN(r)) { pI.disabled = true; } else pI.disabled = false;
+}
+function powerDC(){ const V = parseFloat(pV.value); const I = parseFloat(pI.value); const R = parseFloat(pR.value); let out='';
+  try{
+    if(!isNaN(V) && !isNaN(I)) out+=`P = V×I = ${format(V)}×${format(I)} = ${format(V*I)} W<br>`;
+    if(!isNaN(I) && !isNaN(R)) out+=`P = I²R = ${format(I)}² × ${format(R)} = ${format(I*I*R)} W<br>`;
+    if(!isNaN(V) && !isNaN(R)) out+=`P = V²/R = ${format(V)}² / ${format(R)} = ${format(V*V/R)} W<br>`;
+    if(out==='') out = '<div style="color:var(--danger)">Enter at least two values</div>';
+    document.getElementById('p_result').innerHTML = out; handleOhmInputs();
+  }catch(e){document.getElementById('p_result').innerHTML = '<div style="color:var(--danger)">Error</div>'}}
+
+// AC / Impedance / Phasor functions (updated for sinφ handling)
+function acParams(){ const Vm = parseFloat(document.getElementById('vm').value); const f = parseFloat(document.getElementById('f').value); if(isNaN(Vm) || isNaN(f)){ document.getElementById('ac_result').innerHTML = '<div style="color:var(--danger)">Enter Vm and f</div>'; return }
+  const Vrms = Vm/Math.sqrt(2); const Vavg = (2*Vm)/Math.PI; const omega = 2*Math.PI*f; const T = 1/f; const form = Vrms/Vavg; const peak = Vm/Vrms; const out = `V_m = ${format(Vm)} V<br>V_rms = ${format(Vrms)} V<br>Average (half-wave) = ${format(Vavg)} V<br>ω = ${format(omega)} rad/s, T = ${format(T)} s<br>Form factor = ${format(form)} (≈1.11), Peak factor = ${format(peak)} (≈1.414)`;
+  document.getElementById('ac_result').innerHTML = out; }
+
+ // AC power with cos/sin mutual conversion & disable logic
+const acVr = document.getElementById('ac_vr');
+const acIr = document.getElementById('ac_ir');
+const acCos = document.getElementById('ac_pf'); // cos φ
+const acSin = document.getElementById('ac_sf'); // sin φ
+[acCos, acSin].forEach(inp => inp.addEventListener('input', handleACTrigInputs));
+
+function handleACTrigInputs(){
+  const cosv = parseFloat(acCos.value);
+  const sinv = parseFloat(acSin.value);
+
+  // If valid cos provided (number), disable sin and compute complementary sin (positive/negative preserved by user's sign input)
+  if(!isNaN(cosv)){
+    // Validate range
+    if(Math.abs(cosv) > 1){ document.getElementById('acpower_result').innerHTML = '<div style="color:var(--danger)">|cos φ| must be ≤ 1</div>'; acSin.value=''; acSin.disabled = false; return; }
+    acSin.disabled = true;
+    // compute sin magnitude; decide sign: if user didn't input sign for sin we default to positive; user can enter negative cos to indicate quadrant
+    const sinComputed = Math.sqrt(Math.max(0, 1 - cosv*cosv));
+    // Keep sign of existing sin if it was present (but since we disable sin, set to positive by default)
+    acSin.value = sinComputed;
+  } else {
+    acSin.disabled = false;
+    // if cos is empty and sin is present, handle below
+    if(!isNaN(sinv)){
+      if(Math.abs(sinv) > 1){ document.getElementById('acpower_result').innerHTML = '<div style="color:var(--danger)">|sin φ| must be ≤ 1</div>'; acCos.value=''; acCos.disabled = false; return; }
+      acCos.disabled = true;
+      const cosComputed = Math.sqrt(Math.max(0, 1 - sinv*sinv));
+      acCos.value = cosComputed;
+    } else {
+      // neither provided -> enable both
+      acCos.disabled = false;
+      acSin.disabled = false;
+    }
+  }
+}
+
+function acPower(){
+  const Vr = parseFloat(acVr.value);
+  const Ir = parseFloat(acIr.value);
+  let cosv = parseFloat(acCos.value);
+  let sinv = parseFloat(acSin.value);
+
+  const outEl = document.getElementById('acpower_result');
+
+  if(isNaN(Vr) || isNaN(Ir)){ outEl.innerHTML = '<div style="color:var(--danger)">Enter Vrms and Irms</div>'; return; }
+
+  // If both missing, error
+  if(isNaN(cosv) && isNaN(sinv)){ outEl.innerHTML = '<div style="color:var(--danger)">Enter cos φ or sin φ</div>'; return; }
+
+  // If cos provided and sin missing -> compute sin; validate ranges
+  if(!isNaN(cosv) && isNaN(sinv)){
+    if(Math.abs(cosv) > 1){ outEl.innerHTML = '<div style="color:var(--danger)">|cos φ| must be ≤ 1</div>'; return; }
+    sinv = Math.sqrt(Math.max(0, 1 - cosv*cosv));
+    // if user intended negative sin (leading/lagging), they should enter negative value for sin manually; we default to +ve here
+    acSin.value = sinv;
+    acSin.disabled = true;
+  }
+
+  // If sin provided and cos missing -> compute cos
+  if(!isNaN(sinv) && isNaN(cosv)){
+    if(Math.abs(sinv) > 1){ outEl.innerHTML = '<div style="color:var(--danger)">|sin φ| must be ≤ 1</div>'; return; }
+    cosv = Math.sqrt(Math.max(0, 1 - sinv*sinv));
+    acCos.value = cosv;
+    acCos.disabled = true;
+  }
+
+  // At this point we have numeric cosv and sinv. Use them to compute S,P,Q
+  const S = Vr * Ir;
+  const P = S * cosv;
+  const Q = S * sinv;
+
+  // Display results and brief checks
+  let out = `Apparent power S = ${format(S)} VA<br>Active power P = ${format(P)} W (S × cosφ)<br>Reactive power Q = ${format(Q)} VAR (S × sinφ)<br>Power factor cosφ = ${format(cosv)}, sinφ = ${format(sinv)}<br>`;
+  // Add P² + Q² check vs S
+  const check = Math.sqrt(Math.max(0, P*P + Q*Q));
+  out += `<div class="small">√(P² + Q²) = ${format(check)} (should ≈ S = ${format(S)})</div>`;
+  outEl.innerHTML = out;
+}
+
+// Phasor code unchanged except drawPhasor references
+function phasorRel(){ const R = parseFloat(document.getElementById('phasor_r').value); const L = parseFloat(document.getElementById('phasor_l').value); const C = parseFloat(document.getElementById('phasor_c').value); const f = parseFloat(document.getElementById('phasor_f').value); if(isNaN(R)){ document.getElementById('phasor_result').innerHTML = '<div style="color:var(--danger)">Enter at least R</div>'; return }
+  const omega = 2*Math.PI*(isNaN(f)?50:f); let out=`R = ${format(R)} Ω<br>ω = ${format(omega)} rad/s<br>`;
+  if(!isNaN(L)){ const Xl = omega*L; out += `X_L = ωL = ${format(Xl)} Ω<br>`; }
+  if(!isNaN(C)){ const Xc = 1/(omega*C); out += `X_C = 1/(ωC) = ${format(Xc)} Ω<br>`; }
+  document.getElementById('phasor_result').innerHTML = out; drawPhasor(); }
+function drawPhasor(){ const el = document.getElementById('phasor_canvas'); el.innerHTML=''; const svgNS = 'http://www.w3.org/2000/svg'; const svg = document.createElementNS(svgNS,'svg'); svg.setAttribute('width','100%'); svg.setAttribute('height','100%'); svg.setAttribute('viewBox','0 0 400 200');
+  const mutedColor = (getComputedStyle(document.body).getPropertyValue('--muted') || '#98a6b3').trim();
+  const accent1 = (getComputedStyle(document.body).getPropertyValue('--accent1') || '#8b5cf6').trim();
+  const accent2 = (getComputedStyle(document.body).getPropertyValue('--accent2') || '#ff6bcb').trim();
+  const ax = document.createElementNS(svgNS,'line'); ax.setAttribute('x1',50); ax.setAttribute('y1',100); ax.setAttribute('x2',350); ax.setAttribute('y2',100); ax.setAttribute('stroke',mutedColor); ax.setAttribute('stroke-width',1);
+  svg.appendChild(ax);
+  const ay = document.createElementNS(svgNS,'line'); ay.setAttribute('x1',200); ay.setAttribute('y1',20); ay.setAttribute('x2',200); ay.setAttribute('y2',180); ay.setAttribute('stroke',mutedColor); ay.setAttribute('stroke-width',1); svg.appendChild(ay);
+  const R = parseFloat(document.getElementById('phasor_r').value) || 10; const L = parseFloat(document.getElementById('phasor_l').value) || 0; const C = parseFloat(document.getElementById('phasor_c').value) || 0; const f = parseFloat(document.getElementById('phasor_f').value) || 50; const omega = 2*Math.PI*f; const Xl = L?omega*L:0; const Xc = C?1/(omega*C):0; const scale = 20;
+  const cur = document.createElementNS(svgNS,'line'); cur.setAttribute('x1',200); cur.setAttribute('y1',100); cur.setAttribute('x2',260); cur.setAttribute('y2',100); cur.setAttribute('stroke', accent1); cur.setAttribute('stroke-width',3); svg.appendChild(cur);
+  const vr = document.createElementNS(svgNS,'line'); vr.setAttribute('x1',200); vr.setAttribute('y1',100); vr.setAttribute('x2',200 + (R/Math.max(1,R))*30); vr.setAttribute('y2',100); vr.setAttribute('stroke', accent2); vr.setAttribute('stroke-width',3); svg.appendChild(vr);
+  const vl = document.createElementNS(svgNS,'line'); vl.setAttribute('x1',200); vl.setAttribute('y1',100); vl.setAttribute('x2',200); vl.setAttribute('y2',100 - Math.min(80,Xl*scale*0.02)); vl.setAttribute('stroke',accent1); vl.setAttribute('stroke-width',3); svg.appendChild(vl);
+  const vc = document.createElementNS(svgNS,'line'); vc.setAttribute('x1',200); vc.setAttribute('y1',100); vc.setAttribute('x2',200); vc.setAttribute('y2',100 + Math.min(80,Xc*scale*0.002)); vc.setAttribute('stroke',accent2); vc.setAttribute('stroke-width',3); svg.appendChild(vc);
+  el.appendChild(svg);
+}
+
+function calcRL(){ const R = parseFloat(document.getElementById('rl_r').value); const L = parseFloat(document.getElementById('rl_l').value); const f = parseFloat(document.getElementById('rl_f').value); if(isNaN(R)||isNaN(L)||isNaN(f)){ document.getElementById('rl_res').innerHTML = '<div style="color:var(--danger)">Enter R, L and f</div>'; return }
+  const omega = 2*Math.PI*f; const Xl = omega*L; const Z = Math.sqrt(R*R + Xl*Xl); const phi = Math.atan2(Xl,R); document.getElementById('rl_res').innerHTML = `X_L = ${format(Xl)} Ω<br>Z = ${format(Z)} Ω<br>Phase angle φ = ${format(phi*180/Math.PI)}° (V leads I)`; }
+function calcRC(){ const R = parseFloat(document.getElementById('rc_r').value); const C = parseFloat(document.getElementById('rc_c').value); const f = parseFloat(document.getElementById('rc_f').value); if(isNaN(R)||isNaN(C)||isNaN(f)){ document.getElementById('rc_res').innerHTML = '<div style="color:var(--danger)">Enter R, C and f</div>'; return }
+  const omega = 2*Math.PI*f; const Xc = 1/(omega*C); const Z = Math.sqrt(R*R + Xc*Xc); const phi = Math.atan2(-Xc,R); document.getElementById('rc_res').innerHTML = `X_C = ${format(Xc)} Ω<br>Z = ${format(Z)} Ω<br>Phase angle φ = ${format(phi*180/Math.PI)}° (I leads V)`; }
+function calcRLC(){ const R = parseFloat(document.getElementById('rlc_r').value); const L = parseFloat(document.getElementById('rlc_l').value); const C = parseFloat(document.getElementById('rlc_c').value); const f = parseFloat(document.getElementById('rlc_f').value); if([R,L,C,f].some(x=>isNaN(x))){ document.getElementById('rlc_res').innerHTML = '<div style="color:var(--danger)">Enter R, L, C and f</div>'; return }
+  const omega = 2*Math.PI*f; const Xl = omega*L; const Xc = 1/(omega*C); const X = Xl - Xc; const Z = Math.sqrt(R*R + X*X); const phi = Math.atan2(X,R); const fres = 1/(2*Math.PI*Math.sqrt(L*C)); document.getElementById('rlc_res').innerHTML = `X_L=${format(Xl)} Ω, X_C=${format(Xc)} Ω<br>Net reactance X = X_L - X_C = ${format(X)} Ω<br>Z = ${format(Z)} Ω<br>φ = ${format(phi*180/Math.PI)}°<br>Resonant frequency f_r ≈ ${format(fres)} Hz`; }
+
+// -----------------------------
+// LINE → PHASE
+// -----------------------------
+function computePhaseFromLine() {
+  const conn = document.getElementById("three_conn_col").value;
+  const V_L = parseFloat(document.getElementById("col_vl").value);
+  const I_L = parseFloat(document.getElementById("col_il").value);
+
+  const out = document.getElementById("line_result");
+  if (isNaN(V_L) || isNaN(I_L)) {
+    out.innerHTML = "Please enter valid Line Voltage & Current.";
+    return;
+  }
+
+  let V_ph, I_ph;
+
+  if (conn === "star") {
+    V_ph = V_L / Math.sqrt(3);
+    I_ph = I_L;
+  } else {
+    V_ph = V_L;
+    I_ph = I_L / Math.sqrt(3);
+  }
+
+  out.innerHTML = `
+    <strong>Phase Values:</strong><br>
+    V<sub>ph</sub> = ${V_ph.toFixed(3)} V<br>
+    I<sub>ph</sub> = ${I_ph.toFixed(3)} A
+  `;
+}
+
+function clearLineCol() {
+  document.getElementById("col_vl").value = "";
+  document.getElementById("col_il").value = "";
+  document.getElementById("line_result").innerHTML = "—";
+}
+
+
+
+ // -----------------------------
+ // PHASE → LINE
+ // -----------------------------
+function computeLineFromPhase() {
+  const conn = document.getElementById("three_conn_col2").value;
+  const V_ph = parseFloat(document.getElementById("col_vph").value);
+  const I_ph = parseFloat(document.getElementById("col_iph").value);
+
+  const out = document.getElementById("phase_result");
+  if (isNaN(V_ph) || isNaN(I_ph)) {
+    out.innerHTML = "Please enter valid Phase Voltage & Current.";
+    return;
+  }
+
+  let V_L, I_L;
+
+  if (conn === "star") {
+    V_L = V_ph * Math.sqrt(3);
+    I_L = I_ph;
+  } else {
+    V_L = V_ph;
+    I_L = I_ph * Math.sqrt(3);
+  }
+
+  out.innerHTML = `
+    <strong>Line Values:</strong><br>
+    V<sub>L</sub> = ${V_L.toFixed(3)} V<br>
+    I<sub>L</sub> = ${I_L.toFixed(3)} A
+  `;
+}
+
+function clearPhaseCol() {
+  document.getElementById("col_vph").value = "";
+  document.getElementById("col_iph").value = "";
+  document.getElementById("phase_result").innerHTML = "—";
+}
+
+
+
+ // -----------------------------
+ // THREE-PHASE POWER FROM LINE VALUES
+ // -----------------------------
+function computePowerFromLine() {
+  const V_L = parseFloat(document.getElementById("col_vl").value);
+  const I_L = parseFloat(document.getElementById("col_il").value);
+  const pf = parseFloat(document.getElementById("three_pf").value);
+
+  const out = document.getElementById("three_power_res");
+  if (isNaN(V_L) || isNaN(I_L) || isNaN(pf)) {
+    out.innerHTML = "Enter V<sub>L</sub>, I<sub>L</sub> and Power Factor.";
+    return;
+  }
+
+  const P = Math.sqrt(3) * V_L * I_L * pf;
+
+  out.innerHTML = `Total Power = <strong>${P.toFixed(3)} W</strong>`;
+}
+
+
+
+ // -----------------------------
+ // THREE-PHASE POWER FROM PHASE VALUES
+ // -----------------------------
+function computePowerFromPhase() {
+  const V_ph = parseFloat(document.getElementById("col_vph").value);
+  const I_ph = parseFloat(document.getElementById("col_iph").value);
+  const pf = parseFloat(document.getElementById("three_pf").value);
+
+  const out = document.getElementById("three_power_res");
+  if (isNaN(V_ph) || isNaN(I_ph) || isNaN(pf)) {
+    out.innerHTML = "Enter V<sub>ph</sub>, I<sub>ph</sub> and Power Factor.";
+    return;
+  }
+
+  // Power per phase
+  const P_ph = V_ph * I_ph * pf;
+
+  // Total three-phase power
+  const P_total = 3 * P_ph;
+
+  out.innerHTML = `Total Power = <strong>${P_total.toFixed(3)} W</strong>`;
+}
+
+// DC Machines
+function inducedEMF(){ const P = parseFloat(document.getElementById('gm_p').value); const Phi = parseFloat(document.getElementById('gm_phi').value); const Z = parseFloat(document.getElementById('gm_z').value); const N = parseFloat(document.getElementById('gm_n').value); const A = parseFloat(document.getElementById('gm_a').value);
+  if([P,Phi,Z,N,A].some(x=>isNaN(x))){ document.getElementById('gm_res').innerHTML='<div style="color:var(--danger)">Enter all values P, Φ, Z, N, A</div>'; return }
+  const E = (P*Phi*Z*N)/(60*A); document.getElementById('gm_res').innerHTML = `Induced EMF E = (P Φ Z N)/(60 A) = ${format(E)} V` }
+function motorCalc(){ const kphi = parseFloat(document.getElementById('mt_kphi').value); const Ia = parseFloat(document.getElementById('mt_ia').value); const V = parseFloat(document.getElementById('mt_v').value); const Ra = parseFloat(document.getElementById('mt_ra').value); const Phi = parseFloat(document.getElementById('mt_phi').value);
+  let out=''; if(!isNaN(kphi) && !isNaN(Ia)){ const T = kphi * Ia; out += `Torque T = kΦ I_a = ${format(T)} N·m<br>` } else out += '<div class="small">Torque requires kΦ and I_a</div>';
+  if(!isNaN(V) && !isNaN(Ia) && !isNaN(Ra) && !isNaN(Phi) && Phi!==0){ const Napprox = (V - Ia*Ra)/Phi; out += `Approx. speed (proportional) N ∝ (V - I_a R_a)/Φ = ${format(Napprox)} (units relative)` } else out += `<div class="small">Speed needs V, I_a, R_a and Φ to estimate (proportional relation)</div>`;
+  document.getElementById('mt_res').innerHTML = out }
+
+  // ---------- Reset helper functions ----------
+function resetResistors(){
+  document.getElementById('res_list').value = '';
+  document.getElementById('res_result').innerHTML = '';
+}
+
+function resetPowerDC(){
+  pV.value = ''; pI.value = ''; pR.value = '';
+  document.getElementById('p_result').innerHTML = '';
+  handlePowerInputs();
+}
+
+function resetACParams(){
+  document.getElementById('vm').value = '';
+  document.getElementById('f').value = '';
+  document.getElementById('ac_result').innerHTML = '';
+}
+
+function resetACPower(){
+  acVr.value = ''; acIr.value = ''; acCos.value = ''; acSin.value = '';
+  document.getElementById('acpower_result').innerHTML = '';
+  acCos.disabled = false; acSin.disabled = false;
+}
+
+function resetPhasor(){
+  document.getElementById('phasor_r').value = '';
+  document.getElementById('phasor_l').value = '';
+  document.getElementById('phasor_c').value = '';
+  document.getElementById('phasor_f').value = '';
+  document.getElementById('phasor_result').innerHTML = '';
+  document.getElementById('phasor_canvas').innerHTML = '';
+}
+
+function resetRL(){
+  document.getElementById('rl_r').value = '';
+  document.getElementById('rl_l').value = '';
+  document.getElementById('rl_f').value = '';
+  document.getElementById('rl_res').innerHTML = '';
+}
+
+function resetRC(){
+  document.getElementById('rc_r').value = '';
+  document.getElementById('rc_c').value = '';
+  document.getElementById('rc_f').value = '';
+  document.getElementById('rc_res').innerHTML = '';
+}
+
+function resetRLC(){
+  document.getElementById('rlc_r').value = '';
+  document.getElementById('rlc_l').value = '';
+  document.getElementById('rlc_c').value = '';
+  document.getElementById('rlc_f').value = '';
+  document.getElementById('rlc_res').innerHTML = '';
+}
+
+function resetThreePower(){
+  document.getElementById('col_vl').value = '';
+  document.getElementById('col_il').value = '';
+  document.getElementById('col_vph').value = '';
+  document.getElementById('col_iph').value = '';
+  document.getElementById('three_pf').value = '';
+  document.getElementById('three_power_res').innerHTML = 'Total power: —';
+}
+
+function resetGM(){
+  document.getElementById('gm_p').value = '';
+  document.getElementById('gm_phi').value = '';
+  document.getElementById('gm_z').value = '';
+  document.getElementById('gm_n').value = '';
+  document.getElementById('gm_a').value = '';
+  document.getElementById('gm_res').innerHTML = '';
+}
+
+function resetMotor(){
+  document.getElementById('mt_kphi').value = '';
+  document.getElementById('mt_ia').value = '';
+  document.getElementById('mt_v').value = '';
+  document.getElementById('mt_ra').value = '';
+  document.getElementById('mt_phi').value = '';
+  document.getElementById('mt_res').innerHTML = '';
+}
+
+
+
+ // init
+handlePowerInputs(); handleOhmInputs(); handleACTrigInputs();
+
+</script>
+
+</body>
+</html>
